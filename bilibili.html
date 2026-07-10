@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>官方动态抽奖兑换系统</title>
+    <!-- 引入 Tailwind CSS CDN 以保留原有样式 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 隐藏元素的辅助类 */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-100 flex items-center justify-center p-4 font-sans">
+
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative">
+        <!-- 顶部装饰条 -->
+        <div class="h-2 bg-pink-400 w-full"></div>
+
+        <div class="p-8">
+            
+            <!-- ================= 第一步：欢迎页 ================= -->
+            <div id="step-0" class="text-center animate-fade-in">
+                <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">官方动态抽奖兑换系统</h2>
+                <p class="text-gray-500 mb-8">欢迎参与官方互动抽奖，请凭有效邀请码验证并登记收货信息。</p>
+                <button onclick="showCaptchaModal()" class="w-full bg-pink-400 hover:bg-pink-500 text-white font-bold py-3 px-6 rounded-lg transition duration-200">
+                    立即进入兑换
+                </button>
+            </div>
+
+            <!-- 安全验证弹窗 -->
+            <div id="captcha-modal" class="hidden absolute inset-0 bg-white/95 z-10 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div class="w-full">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">安全验证</h3>
+                    <p class="text-sm text-gray-500 mb-4 text-center">请输入图片中的数字以继续</p>
+                    
+                    <div class="flex flex-col items-center gap-4 mb-6">
+                        <canvas id="captcha-canvas" width="120" height="40" onclick="generateCaptcha()" class="border rounded cursor-pointer" title="点击刷新"></canvas>
+                        
+                        <input type="text" id="captcha-input" maxlength="4" placeholder="输入4位数字" oninput="clearCaptchaError()" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300 text-center tracking-widest">
+                        
+                        <p id="captcha-error" class="text-red-500 text-sm hidden"></p>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="hideCaptchaModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg transition">取消</button>
+                        <button onclick="verifyCaptcha()" class="flex-1 bg-pink-400 hover:bg-pink-500 text-white py-2 rounded-lg transition">确认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= 第二步：信息填写表单 ================= -->
+            <div id="step-1" class="hidden animate-fade-in">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">填写收货信息</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">收货昵称</label>
+                        <input type="text" id="input-consignee" placeholder="请输入收货昵称" oninput="clearFormError()" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">联系电话</label>
+                        <!-- 强制数字键盘输入 -->
+                        <input type="tel" id="input-phone" inputmode="numeric" pattern="[0-9]*" maxlength="11" placeholder="请输入手机号码" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">省份</label>
+                            <input type="text" id="input-province" placeholder="例: 广东省" oninput="clearFormError()" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">城市</label>
+                            <input type="text" id="input-city" placeholder="例: 广州市" oninput="clearFormError()" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">详细地址</label>
+                        <textarea id="input-address" placeholder="请输入区县、街道及详细门牌号" rows="2" oninput="clearFormError()" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300 resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">中奖邀请号码</label>
+                        <input type="text" id="input-inviteCode" placeholder="请输入6位有效邀请码" maxlength="6" oninput="clearFormError()" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300 font-mono tracking-wider bg-pink-50">
+                    </div>
+
+                    <div id="form-error" class="hidden p-3 bg-red-50 text-red-600 rounded-lg text-sm"></div>
+
+                    <button onclick="handleFormSubmit()" class="w-full bg-pink-400 hover:bg-pink-500 text-white font-bold py-3 px-6 rounded-lg transition duration-200 mt-6">
+                        确认提交
+                    </button>
+                </div>
+            </div>
+
+            <!-- 信息二次确认弹窗 -->
+            <div id="confirm-modal" class="hidden absolute inset-0 bg-white/95 z-20 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div class="w-full max-w-sm bg-white border border-gray-100 rounded-xl shadow-2xl p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">请仔细核对收货信息</h3>
+                    <div class="space-y-3 mb-6 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <p class="flex"><span class="w-20 font-bold text-gray-700 shrink-0">收货昵称：</span><span id="confirm-consignee" class="flex-1 break-all"></span></p>
+                        <p class="flex"><span class="w-20 font-bold text-gray-700 shrink-0">联系电话：</span><span id="confirm-phone" class="flex-1 break-all"></span></p>
+                        <p class="flex"><span class="w-20 font-bold text-gray-700 shrink-0">所在地区：</span><span id="confirm-region" class="flex-1 break-all"></span></p>
+                        <p class="flex"><span class="w-20 font-bold text-gray-700 shrink-0">详细地址：</span><span id="confirm-address" class="flex-1 break-all"></span></p>
+                        <p class="flex"><span class="w-20 font-bold text-gray-700 shrink-0">邀请码：</span><span id="confirm-inviteCode" class="flex-1 break-all text-pink-500 font-mono"></span></p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="hideConfirmModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 rounded-lg transition font-medium">返回修改</button>
+                        <button onclick="goToSuccess()" class="flex-1 bg-pink-400 hover:bg-pink-500 text-white py-2.5 rounded-lg transition font-medium shadow-md shadow-pink-200">确认无误</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= 第三步：成功提示 ================= -->
+            <div id="step-2" class="hidden text-center animate-fade-in py-8">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">验证成功！</h2>
+                <p class="text-gray-600 leading-relaxed bg-gray-50 p-4 rounded-lg">
+                    您的信息已登记完毕。<br/>
+                    <span class="text-pink-500 font-bold">你将于 7 日左右收到奖品</span>，<br/>
+                    请保持电话畅通。
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 逻辑脚本 -->
+    <script>
+        // 允许通过的邀请码白名单 (前端写死，极度不安全，仅用于演示)
+        const VALID_CODES = ['456782', '723750', '738469'];
+        
+        let currentCaptchaText = '';
+
+        // DOM 元素获取
+        const elCaptchaError = document.getElementById('captcha-error');
+        const elCaptchaInput = document.getElementById('captcha-input');
+        const elFormError = document.getElementById('form-error');
+
+        // 生成验证码并绘制
+        function generateCaptcha() {
+            const chars = '0123456789';
+            currentCaptchaText = '';
+            for (let i = 0; i < 4; i++) {
+                currentCaptchaText += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            const canvas = document.getElementById('captcha-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景
+            ctx.fillStyle = '#f3f4f6';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 干扰线
+            for (let i = 0; i < 5; i++) {
+                ctx.strokeStyle = `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`;
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                ctx.stroke();
+            }
+
+            // 文字
+            ctx.font = '24px Arial';
+            ctx.fillStyle = '#374151';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i < currentCaptchaText.length; i++) {
+                const x = 20 + i * 20;
+                const y = canvas.height / 2 + (Math.random() * 10 - 5);
+                const angle = Math.random() * 0.4 - 0.2;
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fillText(currentCaptchaText[i], 0, 0);
+                ctx.restore();
+            }
+        }
+
+        // --- 弹窗与步骤切换逻辑 ---
+        function showCaptchaModal() {
+            document.getElementById('captcha-modal').classList.remove('hidden');
+            generateCaptcha();
+            elCaptchaInput.value = '';
+            clearCaptchaError();
+        }
+
+        function hideCaptchaModal() {
+            document.getElementById('captcha-modal').classList.add('hidden');
+        }
+
+        function clearCaptchaError() {
+            elCaptchaError.classList.add('hidden');
+            elCaptchaError.innerText = '';
+        }
+
+        function clearFormError() {
+            elFormError.classList.add('hidden');
+            elFormError.innerText = '';
+        }
+
+        function verifyCaptcha() {
+            if (elCaptchaInput.value === currentCaptchaText) {
+                hideCaptchaModal();
+                // 切换到表单页
+                document.getElementById('step-0').classList.add('hidden');
+                document.getElementById('step-1').classList.remove('hidden');
+            } else {
+                elCaptchaError.innerText = '验证码错误，请重试';
+                elCaptchaError.classList.remove('hidden');
+                generateCaptcha();
+                elCaptchaInput.value = '';
+            }
+        }
+
+        // --- 手机号强制纯数字过滤 ---
+        const phoneInput = document.getElementById('input-phone');
+        phoneInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/\D/g, ''); // 实时剔除非数字字符
+            clearFormError();
+        });
+
+        // --- 最终表单提交预处理 ---
+        function handleFormSubmit() {
+            const consignee = document.getElementById('input-consignee').value.trim();
+            const phone = document.getElementById('input-phone').value.trim();
+            const province = document.getElementById('input-province').value.trim();
+            const city = document.getElementById('input-city').value.trim();
+            const address = document.getElementById('input-address').value.trim();
+            const inviteCode = document.getElementById('input-inviteCode').value.trim();
+
+            // 1. 完整性校验
+            if (!consignee || !phone || !province || !city || !address || !inviteCode) {
+                showFormError('请填写完整所有信息');
+                return;
+            }
+
+            // 2. 手机号校验
+            const phoneRegex = /^1[3-9]\d{9}$/;
+            if (!phoneRegex.test(phone)) {
+                showFormError('请输入有效的11位中国大陆手机号码');
+                return;
+            }
+
+            // 3. 邀请码校验
+            if (VALID_CODES.includes(inviteCode)) {
+                // 填充二次确认弹窗数据
+                document.getElementById('confirm-consignee').innerText = consignee;
+                document.getElementById('confirm-phone').innerText = phone;
+                document.getElementById('confirm-region').innerText = `${province} ${city}`;
+                document.getElementById('confirm-address').innerText = address;
+                document.getElementById('confirm-inviteCode').innerText = inviteCode;
+                
+                // 显示二次确认弹窗
+                document.getElementById('confirm-modal').classList.remove('hidden');
+            } else {
+                showFormError('邀请码无效，请检查后重新输入');
+            }
+        }
+
+        function showFormError(msg) {
+            elFormError.innerText = msg;
+            elFormError.classList.remove('hidden');
+        }
+
+        function hideConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        function goToSuccess() {
+            hideConfirmModal();
+            document.getElementById('step-1').classList.add('hidden');
+            document.getElementById('step-2').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
